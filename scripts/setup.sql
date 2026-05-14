@@ -622,48 +622,4 @@ AS
 SELECT * EXCLUDE (year, make, model)
 FROM tb_101.raw_pos.truck;
 
--- 'tasty_bytes_review_search' という名前のCortex Search Serviceを作成または置換 --
-CREATE OR REPLACE CORTEX SEARCH SERVICE tb_101.harmonized.tasty_bytes_review_search
-ON REVIEW 
-ATTRIBUTES LANGUAGE, ORDER_ID, REVIEW_ID, TRUCK_BRAND_NAME, PRIMARY_CITY, DATE, SOURCE 
-WAREHOUSE = tb_de_wh
-TARGET_LAG = '1 hour' 
-AS (
-    SELECT
-        REVIEW,             
-        LANGUAGE,           
-        ORDER_ID,           
-        REVIEW_ID,          
-        TRUCK_BRAND_NAME,  
-        PRIMARY_CITY,       
-        DATE,               
-        SOURCE             
-    FROM
-        tb_101.harmonized.truck_reviews_v 
-    WHERE
-        REVIEW IS NOT NULL 
-);
 
-USE ROLE securityadmin;
--- セマンティックレイヤーへの追加権限付与
-GRANT SELECT ON VIEW tb_101.semantic_layer.orders_v TO ROLE PUBLIC;
-GRANT SELECT ON VIEW tb_101.semantic_layer.customer_loyalty_metrics_v TO ROLE PUBLIC;
-GRANT READ ON STAGE tb_101.semantic_layer.semantic_model_stage TO ROLE tb_admin;
-GRANT WRITE ON STAGE tb_101.semantic_layer.semantic_model_stage TO ROLE tb_admin;
-
--- 参加者アカウントの設定 パート3 --
-USE ROLE ACCOUNTADMIN;
-
--- Claudeがリージョンにない場合にクロスクラウドで実行可能にする:
-ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'ANY_REGION';
- 
- -- データベースの作成
-CREATE DATABASE IF NOT EXISTS snowflake_intelligence;
-CREATE SCHEMA IF NOT EXISTS snowflake_intelligence.agents;
-
--- エージェントを格納するスキーマの作成
-GRANT USAGE ON DATABASE snowflake_intelligence TO ROLE TB_DEV;
-GRANT USAGE ON SCHEMA snowflake_intelligence.agents TO ROLE TB_DEV;
-
--- agents スキーマに対するCREATE AGENT権限の付与
-GRANT CREATE AGENT ON SCHEMA snowflake_intelligence.agents TO ROLE TB_DEV;
